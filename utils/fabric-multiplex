@@ -1,0 +1,88 @@
+#!/bin/bash
+
+COLOR_OUTPUT=false
+
+# Check for --color in the arguments and remove it
+for arg in "$@"; do
+    if [ "$arg" == "--color" ]; then
+        COLOR_OUTPUT=true
+        set -- "${@/$arg/}"
+        break
+    fi
+done
+
+run_command() {
+    local cmd="$1"
+    local input_file="$2"
+    local output_file="$3"
+
+    local start_time=$SECONDS
+
+    echo "Starting command: $cmd" >&2
+
+    local model_switch=""
+    if [[ "$cmd" == *_local ]]; then
+        model_switch="--model mixtral:latest"
+        cmd="${cmd%_local}"  # Remove _local suffix from the command
+    elif [[ "$cmd" == *_claude ]]; then
+        model_switch="--model claude-3-haiku-20240307"
+        cmd="${cmd%_claude}"  # Remove _claude suffix from the command
+    fi
+
+    {
+        if [ "$cmd" == "cat" ]; then
+            echo "# Input Text"
+            cat "$input_file"
+        else
+            echo "# $cmd"
+            local output=$(fabric --pattern "$cmd" $model_switch < "$input_file")
+            if jq -e . >/dev/null 2>&1 <<< "$output"; then
+                if [ "$COLOR_OUTPUT" = true ]; then
+                    echo "$output" | jq --color-output .
+                else
+                    echo "$output" | jq .
+                fi
+            else
+                echo "$output"
+            fi
+        fi
+        echo  # Add an empty line after each command's output
+        echo
+    } > "$output_file"
+
+    local end_time=$SECONDS
+    local duration=$((end_time - start_time))
+
+    echo "Completed command: $cmd in $duration seconds" >&2
+}
+
+multiplex() {
+    local tmpfile=$(mktemp)  # Temporary file for input
+    local output_files=()    # Array to hold temporary files for outputs
+
+    cat > "$tmpfile"  # Save the stdin to the temporary file
+
+    for cmd in "$@"; do
+        local output_file=$(mktemp)  # Create a temporary file for this command's output
+        output_files+=("$output_file")  # Store the output file in the array
+
+        run_command "$cmd" "$tmpfile" "$output_file" &
+    done
+
+    wait  # Wait for all commands to complete
+
+    # Concatenate and display the outputs in the correct order
+    for output_file in "${output_files[@]}"; do
+        cat "$output_file"
+        rm "$output_file"  # Clean up the output file
+    done
+
+    rm "$tmpfile"  # Clean up the input temporary file
+}
+
+if [ "$#" -lt 1 ]; then
+    echo "Usage: $0 command1 [command2 ...]"
+    exit 1
+fi
+
+multiplex "$@"

@@ -1,0 +1,69 @@
+#!/opt/homebrew/bin/python3
+
+import sys
+import subprocess
+import re
+import argparse
+
+def clean_markdown(text):
+    """Remove Markdown syntax elements from the text."""
+    patterns = [
+        r'\*\*(.*?)\*\*',  # Bold
+        r'\*(.*?)\*',      # Italics
+        r'__(.*?)__',      # Bold
+        r'_(.*?)_',        # Italics
+        r'~~(.*?)~~',      # Strikethrough
+        r'\[\[(.*?)\]\]',  # Custom Markdown links
+        r'\[(.*?)\]\(.*?\)',  # Markdown links (keep the link text)
+        r'==(.*)==',       # Highlight
+        r'\!\[(.*?)\]\(.*?\)',  # Images (remove the entire image syntax)
+    ]
+    clean_text = text
+    for pattern in patterns:
+        clean_text = re.sub(pattern, r'\1', clean_text)  # Replace with the first capturing group
+    
+    # Remove headers separately as they don't have an inner text to keep
+    clean_text = re.sub(r'\#\#*\s*', '', clean_text)  # Headers
+
+    return clean_text
+
+def speak_text(text, rate):
+    """Uses the '/usr/bin/say' command to read aloud the given text at the specified rate."""
+    subprocess.run(['/usr/bin/say', '-r', str(rate)], input=text.encode('utf-8'), check=True)
+
+def main():
+    # Parse command-line arguments
+    parser = argparse.ArgumentParser(description='Speak Markdown sections with optional speed adjustment.')
+    parser.add_argument('--speed', type=float, default=1.0, help='Speed multiplier for speech, up to 3x. Default is 1.0 (normal speed).')
+    args = parser.parse_args()
+
+    base_rate = 170  # Base speech rate
+    rate = min(3.0, max(0.1, args.speed)) * base_rate  # Calculate rate based on speed argument
+
+    lines = list(sys.stdin.readlines())
+    section_text = ''
+
+    for line in lines:
+        if line.lstrip().startswith('#') or line == lines[-1]:
+            if section_text.strip():
+                clean_section_text = clean_markdown(section_text)
+                speak_text(clean_section_text, rate)
+                section_text = ''
+                try:
+                    with open('/dev/tty') as sys.stdin:
+                        input("Press Enter to continue to the next section...")
+                except KeyboardInterrupt:
+                    print("\nExiting gracefully...")
+                    sys.exit(0)
+        section_text += line
+
+    if section_text.strip():
+        clean_section_text = clean_markdown(section_text)
+        speak_text(clean_section_text, rate)
+
+if __name__ == "__main__":
+    try:
+        main()
+    except KeyboardInterrupt:
+        print("\nExiting gracefully...")
+        sys.exit(0)
