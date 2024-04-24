@@ -152,7 +152,7 @@ def chrome_fetch (url, sleep_time=0.33, headless=False, debug=False, referrer=No
 
     # enable paywall bypassing.
     if bypass_paywalls and os.path.exists(PATH_BYPASS_PAYWALL):
-        logger.debug("Enabling Extension: Bypass Paywalsl")
+        logger.debug("Enabling Extension: Bypass Paywall")
         chrome_options.add_argument(f'--load-extension={PATH_BYPASS_PAYWALL}')
 
     # Hide from detection
@@ -195,25 +195,34 @@ def chrome_fetch (url, sleep_time=0.33, headless=False, debug=False, referrer=No
         if human:
             logger.debug("Human-like behavior enabled")
             actions = ActionChains(driver)
+
             # Simulate human-like scrolling and content checking
-            for _ in range(random.randint(3, 7)):
-                scroll_length = random.randint(100, 500)
+            for _ in range(random.randint(5, 10)):
+                scroll_length = random.randint(1000, 1500)
                 actions.scroll_by_amount(0, scroll_length).perform()
                 time.sleep(random.uniform(0.5, 2))
-            logger.debug("Human-like scrolling completed")
+
+                if debug:
+                    logger.debug(f"Human scrolling: {scroll_length}")
+
+            if debug:
+                logger.debug("Human-like scrolling completed")
 
         # Regular behavior
-        else:
-            last_height = driver.execute_script("return document.body.scrollHeight")
-            for _ in range(10):  # Limit the number of scrolls
-                driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-                time.sleep(random.uniform(0.1, sleep_time))
-                new_height = driver.execute_script("return document.body.scrollHeight")
-                if new_height == last_height:
-                    break
-                last_height = new_height
-                if debug:
-                    logger.debug("Scrolled to new height")
+        last_height = driver.execute_script("return document.body.scrollHeight")
+
+        for _ in range(10):  # Limit the number of scrolls
+            driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+            time.sleep(random.uniform(0.1, sleep_time))
+            new_height = driver.execute_script("return document.body.scrollHeight")
+
+            if new_height <= last_height:
+                 break
+
+            last_height = new_height
+
+            if debug:
+                logger.debug(f"Scrolled to new height: {last_height}")
 
         old_content = ""
         new_content = driver.find_element(By.TAG_NAME, "body").text
