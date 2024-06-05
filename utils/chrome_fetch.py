@@ -93,6 +93,10 @@ def remove_utm_params (url):
     # Reconstruct the URL without UTM parameters
     cleaned_url = urllib.parse.urlunparse(parsed_url._replace(query=query_string))
 
+    # add in https:// by default.
+    if not cleaned_url.startswith("http"):
+        cleaned_url = "https://" + cleaned_url
+
     return cleaned_url
 
 
