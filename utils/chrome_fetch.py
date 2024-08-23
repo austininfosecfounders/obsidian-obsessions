@@ -254,6 +254,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Fetch the inner text of a webpage.")
     parser.add_argument("url", help="URL of the webpage to fetch")
     parser.add_argument("--echourl", action='store_true', help="Echo the URL we are fetching to stderr.")
+    parser.add_argument("--echourlstdout", action='store_true', help="Echo the URL we are fetching to stderr.")
     parser.add_argument("--sleep", type=float, default=0.33, help="Time to wait in-between operations")
     parser.add_argument("--headless", action='store_true', help="Run in headless mode.")
     parser.add_argument("--debug", action='store_true', help="Enable debug mode.")
@@ -270,6 +271,9 @@ if __name__ == "__main__":
 
     if args.echourl:
         sys.stderr.write(url + "\n")
+
+    if args.echourlstdout:
+        sys.stdout.write(url + "\n")
 
     if args.stats:
         sys.stderr.write(text_analysis(content) + "\n")
