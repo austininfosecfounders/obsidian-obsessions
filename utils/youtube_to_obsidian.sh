@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Do we want to ingest the videos into our vault?
+DOWNLOAD_VIDEOS=false
+
 # Ensure we're running in the directory where this script is located
 cd "/Users/pedram/Library/Mobile Documents/iCloud~md~obsidian/Documents/Pedsidian/Content Farm/YouTube"
 
@@ -54,15 +57,17 @@ echo "$entries" | while IFS=' ' read -r id title; do
     markdown_file="${clean_title}.md"
 
     # Check for the existence of the video file using the cleaned title
-    # video_file="./Videos/${clean_title}.mp4"
-    # if [[ -f "$video_file" ]]; then
-    #     echo "Video already downloaded: $title"
-    # else
-    #     echo "Downloading video: $title"
-    #     yt-dlp -f 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/mp4' -o "$video_file" "$video_url"
-    #     # Add the video file to the list of processed videos
-    #     processed_videos+=("$video_file")
-    # fi
+    if [ "$DOWNLOAD_VIDEOS" = true ]; then
+        video_file="./Videos/${clean_title}.mp4"
+        if [[ -f "$video_file" ]]; then
+            echo "Video already downloaded: $title"
+        else
+            echo "Downloading video: $title"
+            yt-dlp -f 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/mp4' -o "$video_file" "$video_url"
+            # Add the video file to the list of processed videos
+            processed_videos+=("$video_file")
+        fi
+    fi
 
     # Create markdown file if it doesn't exist
     if [[ ! -f "$markdown_file" ]]; then
