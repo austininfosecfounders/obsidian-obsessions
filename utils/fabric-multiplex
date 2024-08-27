@@ -1,15 +1,28 @@
 #!/bin/bash
 
 COLOR_OUTPUT=false
+INCREASE_HEADINGS=false
 
-# Check for --color in the arguments and remove it
+# Process switches
 for arg in "$@"; do
-    if [ "$arg" == "--color" ]; then
-        COLOR_OUTPUT=true
-        set -- "${@/$arg/}"
-        break
-    fi
+    case "$arg" in
+        --color)
+            COLOR_OUTPUT=true
+            ;;
+        --increase-headings)
+            INCREASE_HEADINGS=true
+            ;;
+        *)
+            # If it's not a recognized switch, add it to a new array
+            COMMANDS+=("$arg")
+            ;;
+    esac
 done
+
+# increase heading levels.
+increase_heading_level() {
+    sed -E 's/^(#+)/\1#/'
+}
 
 run_command() {
     local cmd="$1"
@@ -48,7 +61,11 @@ run_command() {
         fi
         echo  # Add an empty line after each command's output
         echo
-    } > "$output_file"
+    } | if [ "$INCREASE_HEADINGS" = true ]; then
+        increase_heading_level
+    else
+        cat
+    fi > "$output_file"
 
     local end_time=$SECONDS
     local duration=$((end_time - start_time))
@@ -80,9 +97,9 @@ multiplex() {
     rm "$tmpfile"  # Clean up the input temporary file
 }
 
-if [ "$#" -lt 1 ]; then
-    echo "Usage: $0 command1 [command2 ...]"
+if [ "${#COMMANDS[@]}" -lt 1 ]; then
+    echo "Usage: $0 [--color] [--increase-headings] command1 [command2 ...]"
     exit 1
 fi
 
-multiplex "$@"
+multiplex "${COMMANDS[@]}"
