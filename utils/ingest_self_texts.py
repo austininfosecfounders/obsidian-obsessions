@@ -62,6 +62,8 @@ def get_actual_url (apple_news_url):
 
 # Helper function to write a note to self to the markdown file if that note doesn't already exist.
 def note_to_self (message, iso8601):
+    iso8601 = iso8601[:10]
+
     with open(NOTES2SELF, "r") as f:
         content = f.read()
 
