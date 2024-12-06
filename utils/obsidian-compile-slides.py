@@ -111,6 +111,42 @@ def add_mono_font(content):
         print(f"Error in add_mono_font: {str(e)}")
         raise
 
+def add_layout_settings(content):
+    """Add layout settings to help content fit on slides."""
+    layout_settings = '''
+% Settings to help content fit on slides
+\\setbeamersize{text margin left=0.5cm,text margin right=0.5cm}
+\\addtobeamertemplate{frametitle}{}{\\vspace{0.2cm}}  % Increased space after title
+\\setlength{\\parskip}{0.8em}  % Increased paragraph spacing
+
+% Frame title formatting
+\\setbeamertemplate{frametitle}{
+    \\vspace{0.5cm}  % Add space before title
+    \\insertframetitle
+    \\vspace{0.3cm}  % Add space after title
+}
+
+% Itemize settings
+\\setbeamertemplate{itemize items}[circle]
+\\setbeamertemplate{itemize subitem}[circle]
+\\setbeamertemplate{itemize subsubitem}[circle]
+
+% Prevent automatic frame breaks to keep content together
+\\setbeamertemplate{frametitle continuation}{}
+\\makeatletter
+\\beamer@ignorenonframetrue
+\\makeatother
+'''
+    # Find the \begin{document} and insert the settings just before it
+    pattern = r'\\begin\{document\}'
+    try:
+        def replacement(match):
+            return layout_settings + match.group(0)
+        return re.sub(pattern, replacement, content)
+    except Exception as e:
+        print(f"Error in add_layout_settings: {str(e)}")
+        raise
+
 def process_tex_file(tex_file, use_dracula=True, use_mono=True):
     """Process a single tex file."""
     tex_path = Path(tex_file)
@@ -125,6 +161,9 @@ def process_tex_file(tex_file, use_dracula=True, use_mono=True):
 
     # Process images and update content
     new_content = copy_and_sanitize_images(content)
+
+    # Add layout settings (always)
+    new_content = add_layout_settings(new_content)
 
     # Add Dracula theme if requested
     if use_dracula:
