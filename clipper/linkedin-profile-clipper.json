@@ -1,0 +1,13 @@
+{
+	"schemaVersion": "0.1.0",
+	"name": "LinkedIn Profile",
+	"behavior": "create",
+	"noteContentFormat": "{{selector:img.pv-top-card-profile-picture__image--show?src}}\n{{url}}\n\n{{\"you are parsing a LinkedIn profile page. i want you to determine what company the person works at, what their role is and where they are located. their location is typically right next to \"Contact Info\". right after their name and title. then you're going to output three obsidian markdown frontmatter formatted var-value pairs. \"Company::\", \"Role::\" and \"Location::\" write each on its own line and fill the value based on your analysis\"}}\nConnection:: \nCategory::\n\n# Meetings\n```dataview\nTABLE file.cday as Created, Summary \nFROM #meeting or \"meetings\" \nWHERE contains(file.outlinks, this.file.link) \nSORT file.cday DESC\nLIMIT 25\n```\n\n# Tasks\n```dataviewjs\n// Get the current file's name\nconst currentFileName = dv.current().file.name;\n\n// Query all tasks in the vault\nconst allTasks = dv.pages().file.tasks;\n\n// Filter tasks that contain a link to the current page\nconst tasksLinkingHere = allTasks.where(task => {\n    const taskContent = task.text;\n    return taskContent.includes(`[[${currentFileName}]]`) || \n           taskContent.includes(`[${currentFileName}]`);\n});\n\n// Convert results to an array (to avoid Proxy issues)\nconst results = [...tasksLinkingHere];\n\n// Display the results\nif (results.length > 0) {\n    // dv.header(3, `Tasks linking to \"${currentFileName}\"`);\n    dv.taskList(results);\n} else {\n    dv.paragraph(`No tasks found linking to '${currentFileName}'.`);\n}\n```\n\n# Connections\n```dataview\nTABLE Company, Role\nFROM \"People\" \nWHERE contains(Connection, this.file.link) \nSORT file.cday DESC\nLIMIT 25\n```\n",
+	"properties": [],
+	"triggers": [
+		"https://www.linkedin.com"
+	],
+	"noteNameFormat": "{{selector:h1}}",
+	"path": "People",
+	"context": "{{content}}"
+}
